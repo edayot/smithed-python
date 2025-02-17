@@ -119,8 +119,8 @@ class ConflictsHandler:
 
         # Handle vanilla paths as the base / current file
         if path.startswith("minecraft:"):
-            if path not in self.vanilla:
-                current.data = self.grab_vanilla(path, json_file_type)
+            if path not in self.vanilla and (data := self.grab_vanilla(path, json_file_type)):
+                current.data = data
                 self.vanilla.add(path)
 
         # Handle non-vanilla paths, swap conflict w/ current if no smithed rules exist
@@ -180,11 +180,16 @@ class ConflictsHandler:
 
         return obj
 
-    def grab_vanilla(self, path: str, json_file_type: type[NamespaceFile]) -> JsonDict:
+    def grab_vanilla(self, path: str, json_file_type: type[NamespaceFile]) -> JsonDict|None:
         """Grabs the vanilla file to load as the current file (aka the base)."""
 
         vanilla = self.ctx.inject(Vanilla)
-        return cast(JsonFile, vanilla.data[json_file_type][path]).data
+        file = vanilla.data[json_file_type].get(path)
+
+        if file is None:
+            return None
+
+        return cast(JsonFile, file).data
 
     def process(self):
         """Main entrypoint for smithed merge solving"""
